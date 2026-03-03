@@ -88,7 +88,7 @@ async function runAuraAutonomous() {
         console.log("[SUCCESS] Posted to LinkedIn and X.");
 
         // Step 4: GitHub Sync
-        const TOKEN = process.env.MY_GITHUB_TOKEN ? .trim();
+        const TOKEN = process.env.MY_GITHUB_TOKEN?.trim();
         const remoteUrl = `https://x-access-token:${TOKEN}@github.com/Priom-Das/Project---Aura.git`;
 
         await git.addConfig('user.name', 'github-actions[bot]');
