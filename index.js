@@ -33,7 +33,7 @@ async function generateAuraInsights() {
     const techLog = hfResponse.choices[0].message.content.trim();
 
     /* Fixed Stable Gemini v1beta Endpoint */
-    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`;
+    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${process.env.GEMINI_API_KEY}`;
     const geminiPrompt = {
         contents: [{ parts: [{ text: `You are ${AGENT_NAME}. Rewrite this technical log: "${techLog}" into an engaging LinkedIn and X post. Use one emoji.` }] }]
     };
