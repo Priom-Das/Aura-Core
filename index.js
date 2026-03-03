@@ -1,7 +1,7 @@
 /*
  * Project Aura - Autonomous AI Agent
- * Version: 1.3.2 (Bug Fix & Security Update)
- * Focus: High-quality content generation with error handling and secure synchronization.
+ * Version: 1.3.3 (Rapid Response & URN Fix)
+ * Focus: High-quality content generation with optimized testing cycle.
  */
 
 require('dotenv').config();
@@ -26,13 +26,11 @@ const X_CLIENT = new TwitterApi({
 
 /**
  * SECTION: UTILITY FUNCTIONS
- * Provides helper methods for randomization and delays.
  */
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 /**
  * SECTION: AI CONTENT GENERATION
- * Fixed Gemini 404 issue by using the latest stable model endpoint.
  */
 async function generateAuraInsights() {
     // Phase 1: Technical insight via Llama 3.2
@@ -47,8 +45,7 @@ async function generateAuraInsights() {
     });
     const techLog = hfResponse.choices[0].message.content.trim();
 
-    // Phase 2: Human-style adaptation via Gemini 1.5 Flash
-    // Fixed: Updated to gemini-1.5-flash-latest to prevent 404 errors.
+    // Phase 2: Adaptation via Gemini 1.5 Flash
     const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${process.env.GEMINI_API_KEY}`;
 
     const geminiPrompt = {
@@ -70,12 +67,15 @@ async function generateAuraInsights() {
 
 /**
  * SECTION: SOCIAL MEDIA SYNC (LINKEDIN)
- * Fixed: Added Content-Type and proper error logging for LinkedIn.
  */
 async function postToLinkedIn(content) {
     const url = 'https://api.linkedin.com/v2/ugcPosts';
+
+    // Using the verified Person ID from your profile source
+    const authorUrn = `urn:li:person:${process.env.LINKEDIN_PERSON_ID}`;
+
     const body = {
-        author: `urn:li:person:${process.env.LINKEDIN_PERSON_ID}`,
+        author: authorUrn,
         lifecycleState: 'PUBLISHED',
         specificContent: {
             'com.linkedin.ugc.ShareContent': {
@@ -97,38 +97,39 @@ async function postToLinkedIn(content) {
 
 /**
  * MAIN EXECUTION BLOCK
- * Handles the randomized deployment cycle 4-5 times per day.
+ * Modified for faster testing and human-like logic.
  */
 async function runAuraAutonomous() {
-    // 1. Randomized probability gate (approx. 60% success rate)
-    if (Math.random() > 0.6) {
+    // 1. Probability gate (Set to 1.0 for testing, change to 0.6 for production)
+    if (Math.random() > 1.0) {
         console.log("[SYSTEM] Probability gate closed. Skipping this cycle.");
         return;
     }
 
-    // 2. Random delay to mimic human behavior (1-60 mins)
-    const delayMinutes = Math.floor(Math.random() * 60) + 1;
-    console.log(`[SYSTEM] Random delay active. Sleeping for ${delayMinutes} minutes...`);
+    // 2. Optimized delay for testing (Reduced to 1 minute)
+    const delayMinutes = 1;
+    console.log(`[SYSTEM] Fast tracking cycle. Waiting for ${delayMinutes} minute...`);
     await sleep(delayMinutes * 60 * 1000);
 
     console.log(`--- [SYSTEM] ${AGENT_NAME} Active Cycle Started ---`);
 
     try {
-        // Step 1: AI Content Generation
+        // Step 1: Generate Content
         const humanInsight = await generateAuraInsights();
+        console.log(`[CONTENT] Generated: ${humanInsight}`);
 
-        // Step 2: Persistent Local Logging (BST)
+        // Step 2: Local Logging
         const timestamp = new Date().toLocaleString("en-US", { timeZone: "Asia/Dhaka" });
         fs.appendFileSync('progress_log.txt', `\n[${timestamp}] ${AGENT_NAME}: ${humanInsight}`);
 
-        // Step 3: Social Media Synchronization
-        console.log("[SOCIAL] Synchronizing content with LinkedIn and X...");
+        // Step 3: Social Sync
+        console.log("[SOCIAL] Posting to LinkedIn and X...");
         await Promise.all([
             postToLinkedIn(humanInsight),
             X_CLIENT.v2.tweet(humanInsight)
         ]);
 
-        // Step 4: GitHub Repository Synchronization
+        // Step 4: GitHub Sync
         const GITHUB_USER = "Priom-Das";
         const REPO_NAME = "Project---Aura";
         const TOKEN = process.env.MY_GITHUB_TOKEN?.trim();
@@ -147,18 +148,16 @@ async function runAuraAutonomous() {
         await git.add('progress_log.txt');
         const status = await git.status();
 
-        if (status.modified.length > 0 || status.not_added.length > 0) {
-            await git.commit(`Automated Sync: ${AGENT_NAME} randomized deployment finalized.`);
+        if (status.modified.length > 0) {
+            await git.commit(`Automated Sync: ${AGENT_NAME} deployment.`);
             await git.push('origin', 'main');
-            console.log("[SUCCESS] Repository and Social platforms fully synchronized.");
-        } else {
-            console.log("[IDLE] No changes detected in the log file.");
+            console.log("[SUCCESS] Everything is synchronized.");
         }
 
     } catch (error) {
         if (error.response) {
-            console.error("[CRITICAL FAILURE] Status Code:", error.response.status);
-            console.error("[CRITICAL FAILURE] API Response:", JSON.stringify(error.response.data));
+            console.error("[CRITICAL FAILURE] Status:", error.response.status);
+            console.error("[CRITICAL FAILURE] Data:", JSON.stringify(error.response.data));
         } else {
             console.error("[CRITICAL FAILURE] Message:", error.message);
         }
