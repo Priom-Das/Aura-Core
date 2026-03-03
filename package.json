@@ -1,20 +1,30 @@
 {
-  "name": "project---aura",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs",
-  "dependencies": {
-    "@huggingface/inference": "^4.13.13",
-    "dotenv": "^17.3.1",
-    "openai": "^6.24.0",
-    "playwright": "^1.58.2",
-    "simple-git": "^3.32.2"
-  }
+    "name": "project---aura",
+    "version": "1.0.0",
+    "description": "Project Aura is an automated documentation agent built to track daily development progress. It leverages AI-driven insights to maintain activity logs and synchronizes them directly with GitHub repositories.",
+    "main": "index.js",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "type": "commonjs",
+    "dependencies": {
+        "@huggingface/inference": "^4.13.14",
+        "axios": "^1.13.6",
+        "dotenv": "^17.3.1",
+        "openai": "^6.24.0",
+        "playwright": "^1.58.2",
+        "simple-git": "^3.32.3",
+        "twitter-api-v2": "^1.29.0"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/Priom-Das/Project---Aura.git"
+    },
+    "bugs": {
+        "url": "https://github.com/Priom-Das/Project---Aura/issues"
+    },
+    "homepage": "https://github.com/Priom-Das/Project---Aura#readme"
 }

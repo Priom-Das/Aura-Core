@@ -1,7 +1,10 @@
 {
     "cSpell.words": [
+        "axios",
+        "dotenv",
         "HUGGINGFACE",
         "mistralai",
-        "Priom"
+        "Priom",
+        "Restli"
     ]
 }

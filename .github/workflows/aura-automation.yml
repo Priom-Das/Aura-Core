@@ -1,47 +1,62 @@
-# The name of the automation process as it appears in the GitHub Actions tab
-name: Aura Autonomous Execution
+# GitHub Actions workflow for Project Aura v1.3.1
+# This configuration automates the randomized execution cycle 8 times daily.
+# It utilizes Multi-AI orchestration and synchronizes with LinkedIn and X.
 
-# Define when the script should run automatically
+name: Aura v1.3.1 Randomized Sync
+
 on:
   schedule:
-    # Runs at 00:00 UTC (midnight) every single day using Cron syntax
-    - cron: '0 0 * * *'
+    # Triggers every 3 hours (00:00, 03:00, 06:00, etc. UTC)
+    # The internal JavaScript logic filters this down to 4-5 posts daily.
+    - cron: '0 */3 * * *'
   push:
-    # Trigger the script immediately whenever you push code to the main branch
     branches:
       - main
+  workflow_dispatch: # Enables manual execution from the Actions tab
 
 jobs:
   build:
-    # Use the latest Ubuntu Linux environment provided by GitHub
+    name: Execute Autonomous Deployment
     runs-on: ubuntu-latest
     
-    # Grant permission to the script to modify and push files back to the repository
+    # Extended timeout to accommodate the random sleep duration in index.js
+    timeout-minutes: 75
+    
     permissions:
       contents: write
-      
+
     steps:
-      # Step 1: Download the repository code onto the virtual machine
+      # Step 1: Securely checkout the repository code
       - name: Checkout Repository
         uses: actions/checkout@v3
         with:
           fetch-depth: 0
 
-      # Step 2: Install Node.js environment on the virtual machine
-      - name: Set up Node.js
+      # Step 2: Initialize Node.js environment
+      - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: '20'
 
-      # Step 3: Install all project dependencies defined in package.json
+      # Step 3: Install necessary AI and Social Media libraries
       - name: Install Dependencies
-        run: npm install
+        run: npm install axios simple-git dotenv @huggingface/inference twitter-api-v2
 
-      # Step 4: Run the main script while passing secret keys as environment variables
+      # Step 4: Run the agent with secrets mapped according to your repository settings
       - name: Execute Aura Agent
         env:
-          # Hugging Face API key for AI generation
+          # Mapping GitHub Secrets based on your provided screenshots
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
-          # Personal Access Token with 'workflow' scope for pushing changes
-          GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          MY_GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
+          
+          # LinkedIn API Credentials
+          LINKEDIN_ACCESS_TOKEN: ${{ secrets.LINKEDIN_ACCESS_TOKEN }}
+          LINKEDIN_PERSON_ID: ${{ secrets.LINKEDIN_PERSON_ID }}
+          
+          # X (Twitter) API Credentials
+          X_CONSUMER_KEY: ${{ secrets.X_CONSUMER_KEY }}
+          X_SECRET_KEY: ${{ secrets.X_SECRET_KEY }}
+          X_ACCESS_TOKEN: ${{ secrets.X_ACCESS_TOKEN }}
+          X_ACCESS_TOKEN_SECRET: ${{ secrets.X_ACCESS_TOKEN_SECRET }}
         run: node index.js
