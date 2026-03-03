@@ -32,8 +32,8 @@ async function generateAuraInsights() {
     });
     const techLog = hfResponse.choices[0].message.content.trim();
 
-    /* Corrected Stable Gemini Endpoint for v1 */
-    const geminiUrl = `https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key=${process.env.GEMINI_API_KEY}`;
+    /* Corrected Stable Gemini Endpoint - March 2026 */
+    const geminiUrl = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-pro:generateContent?key=${process.env.GEMINI_API_KEY}`;
     const geminiPrompt = {
         contents: [{ parts: [{ text: `You are ${AGENT_NAME}. Rewrite this technical log: "${techLog}" into an engaging LinkedIn and X post. Use one emoji.` }] }]
     };
@@ -88,7 +88,7 @@ async function runAuraAutonomous() {
         console.log("[SUCCESS] Posted to LinkedIn and X.");
 
         // Step 4: GitHub Sync
-        const TOKEN = process.env.MY_GITHUB_TOKEN?.trim();
+        const TOKEN = process.env.MY_GITHUB_TOKEN ? .trim();
         const remoteUrl = `https://x-access-token:${TOKEN}@github.com/Priom-Das/Project---Aura.git`;
 
         await git.addConfig('user.name', 'github-actions[bot]');
