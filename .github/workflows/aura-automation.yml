@@ -1,62 +1,48 @@
-# GitHub Actions workflow for Project Aura v1.3.1
-# This configuration automates the randomized execution cycle 8 times daily.
-# It utilizes Multi-AI orchestration and synchronizes with LinkedIn and X.
+# Project Aura: Autonomous Deployment Workflow
+# Version: 1.4.0 (Daily Automated Cycle)
 
-name: Aura v1.3.1 Randomized Sync
+name: Execute Autonomous Deployment
 
 on:
   schedule:
-    # Triggers every 3 hours (00:00, 03:00, 06:00, etc. UTC)
-    # The internal JavaScript logic filters this down to 4-5 posts daily.
-    - cron: '0 */3 * * *'
-  push:
-    branches:
-      - main
-  workflow_dispatch: # Enables manual execution from the Actions tab
+    # Runs everyday at 08:00 UTC (Which is 02:00 PM Bangladesh Time)
+    - cron: '0 8 * * *' 
+  workflow_dispatch:
+    # Allows you to run the agent manually from the Actions tab
 
 jobs:
-  build:
-    name: Execute Autonomous Deployment
+  run-aura:
     runs-on: ubuntu-latest
-    
-    # Extended timeout to accommodate the random sleep duration in index.js
-    timeout-minutes: 75
-    
-    permissions:
-      contents: write
 
     steps:
-      # Step 1: Securely checkout the repository code
       - name: Checkout Repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 0 # Ensures full history for git push operations
 
-      # Step 2: Initialize Node.js environment
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: '20'
 
-      # Step 3: Install necessary AI and Social Media libraries
       - name: Install Dependencies
-        run: npm install axios simple-git dotenv @huggingface/inference twitter-api-v2
+        run: npm install
 
-      # Step 4: Run the agent with secrets mapped according to your repository settings
       - name: Execute Aura Agent
+        run: node index.js
         env:
-          # Mapping GitHub Secrets based on your provided screenshots
-          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          # AI Engine Credentials
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          MY_GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
-          
-          # LinkedIn API Credentials
-          LINKEDIN_ACCESS_TOKEN: ${{ secrets.LINKEDIN_ACCESS_TOKEN }}
-          LINKEDIN_PERSON_ID: ${{ secrets.LINKEDIN_PERSON_ID }}
-          
-          # X (Twitter) API Credentials
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+
+          # Social Media API Credentials
           X_CONSUMER_KEY: ${{ secrets.X_CONSUMER_KEY }}
           X_SECRET_KEY: ${{ secrets.X_SECRET_KEY }}
           X_ACCESS_TOKEN: ${{ secrets.X_ACCESS_TOKEN }}
           X_ACCESS_TOKEN_SECRET: ${{ secrets.X_ACCESS_TOKEN_SECRET }}
-        run: node index.js
+          
+          LINKEDIN_PERSON_ID: ${{ secrets.LINKEDIN_PERSON_ID }}
+          LINKEDIN_ACCESS_TOKEN: ${{ secrets.LINKEDIN_ACCESS_TOKEN }}
+
+          # GitHub Automation Token
+          MY_GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
