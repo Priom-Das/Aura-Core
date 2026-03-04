@@ -32,13 +32,16 @@ async function generateAuraInsights() {
     });
     const techLog = hfResponse.choices[0].message.content.trim();
 
-    /* Using the most compatible endpoint with your new key */
-    /* Standardized Gemini API URL - Verified Working */
+    /* Keep this block: It communicates with Gemini AI */
     const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`;
-    const geminiPrompt = {
-        contents: [{ parts: [{ text: `You are ${AGENT_NAME}. Rewrite this technical log: "${techLog}" into an engaging LinkedIn and X post. Use one emoji.` }] }]
-    };
 
+    const geminiPrompt = {
+        contents: [{
+            parts: [{
+                text: `You are ${AGENT_NAME}. Rewrite this technical log: "${techLog}" into an engaging LinkedIn and X post. Use one emoji.`
+            }]
+        }]
+    };
     const geminiResponse = await axios.post(geminiUrl, geminiPrompt);
     return geminiResponse.data.candidates[0].content.parts[0].text.trim();
 }
