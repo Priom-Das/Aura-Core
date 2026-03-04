@@ -1,48 +1,56 @@
-# Project Aura: Autonomous Deployment Workflow
-# Version: 1.4.0 (Daily Automated Cycle)
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+# @file aura-automation.yml
+# @description GitHub Actions workflow for autonomous AI content generation.
 
-name: Execute Autonomous Deployment
+name: Aura Automation Pipeline
 
 on:
   schedule:
-    # Runs everyday at 08:00 UTC (Which is 02:00 PM Bangladesh Time)
-    - cron: '0 8 * * *' 
-  workflow_dispatch:
-    # Allows you to run the agent manually from the Actions tab
+    - cron: '0 0 * * *' # Executes daily at 00:00 UTC
+  workflow_dispatch: # Enables manual execution for testing
 
 jobs:
-  run-aura:
+  run-pipeline:
     runs-on: ubuntu-latest
+    
+    # Ensures only one workflow runs at a time to prevent git conflicts
+    concurrency:
+      group: aura-sync
+      cancel-in-progress: true
 
     steps:
-      - name: Checkout Repository
+      - name: Checkout Source Code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # Ensures full history for git push operations
+          token: ${{secrets.MY_GITHUB_TOKEN}}
 
-      - name: Setup Node.js
+      - name: Initialize Node.js Environment
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+          cache: 'npm'
 
-      - name: Install Dependencies
+      - name: Install Project Dependencies
         run: npm install
 
-      - name: Execute Aura Agent
-        run: node index.js
+      - name: Execute AI Generation
         env:
-          # AI Engine Credentials
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: node index.js
 
-          # Social Media API Credentials
-          X_CONSUMER_KEY: ${{ secrets.X_CONSUMER_KEY }}
-          X_SECRET_KEY: ${{ secrets.X_SECRET_KEY }}
-          X_ACCESS_TOKEN: ${{ secrets.X_ACCESS_TOKEN }}
-          X_ACCESS_TOKEN_SECRET: ${{ secrets.X_ACCESS_TOKEN_SECRET }}
+      - name: Synchronize Logs to Repository
+        run: |
+          # Configure Git identity for the automated bot
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
           
-          LINKEDIN_PERSON_ID: ${{ secrets.LINKEDIN_PERSON_ID }}
-          LINKEDIN_ACCESS_TOKEN: ${{ secrets.LINKEDIN_ACCESS_TOKEN }}
-
-          # GitHub Automation Token
-          MY_GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
+          git add posts_log.md
+          
+          # Perform commit and push only if modifications are detected
+          if git diff --staged --quiet; then
+            echo "No changes detected in logs."
+          else
+            git commit -m "System: Update autonomous logs [skip ci]"
+            git push origin main
+          fi

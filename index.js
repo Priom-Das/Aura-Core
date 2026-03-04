@@ -1,123 +1,86 @@
-/*
- * Project Aura - Autonomous AI Agent
- * Version: 1.4.0 (Free Tier Stability & Anti-Duplicate Mode)
+/**
+ * @file index.js
+ * @description Autonomous AI agent that generates technical insights using a failover architecture.
+ * @author Priom Das
+ * @version 2.0.0
  */
 
 require('dotenv').config();
 const fs = require('fs');
 const axios = require('axios');
-const simpleGit = require('simple-git');
-const { HfInference } = require('@huggingface/inference');
-const { TwitterApi } = require('twitter-api-v2');
-
-const git = simpleGit();
-const hf = new HfInference(process.env.HF_TOKEN);
-const AGENT_NAME = "Aura";
-
-const X_CLIENT = new TwitterApi({
-    appKey: process.env.X_CONSUMER_KEY,
-    appSecret: process.env.X_SECRET_KEY,
-    accessToken: process.env.X_ACCESS_TOKEN,
-    accessSecret: process.env.X_ACCESS_TOKEN_SECRET,
-});
 
 /**
- * Generates a random topic to ensure content uniqueness
+ * Orchestrates content generation by attempting multiple AI providers.
+ * Primary: Groq (Llama-3), Fallback: Hugging Face (Mistral).
+ * @returns {Promise<string>} Generated technical insight.
  */
-function getRandomTopic() {
-    const topics = [
-        "Cloud Computing in 2026",
-        "Edge AI benefits",
-        "Sustainable Tech",
-        "The future of JavaScript",
-        "Cybersecurity in Automation"
-    ];
-    return topics[Math.floor(Math.random() * topics.length)];
-}
+async function getTechnicalInsight() {
+    const prompt = "Provide a concise, professional technical insight for modern software engineers in 2026.";
 
-async function generateAuraInsights() {
-    const topic = getRandomTopic();
-    const uniqueSalt = Date.now(); // Adds uniqueness to prevent 422 errors
-
-    /* Step 1: Hugging Face Base Generation */
-    const hfResponse = await hf.chatCompletion({
-        model: "meta-llama/Llama-3.2-1B-Instruct",
-        messages: [{ role: "user", content: `Write a 10-word technical insight about ${topic}.` }],
-        max_tokens: 30
-    });
-    const techLog = hfResponse.choices[0].message.content.trim();
-
-    /* Step 2: Gemini Refinement */
+    // Attempt 1: Groq Cloud API (High-performance inference)
     try {
-        const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`;
-        const geminiPrompt = {
-            contents: [{ parts: [{ text: `Topic: ${topic}. Log: ${techLog}. Rewrite as a professional post with one emoji. Ensure it sounds different from previous posts. Reference ID: ${uniqueSalt}` }] }]
-        };
+        const groqResponse = await axios.post(
+            'https://api.groq.com/openai/v1/chat/completions', {
+                model: "llama3-8b-8192",
+                messages: [{ role: "user", content: prompt }],
+                temperature: 0.7
+            }, {
+                headers: {
+                    'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
+                    'Content-Type': 'application/json'
+                }
+            }
+        );
 
-        const geminiResponse = await axios.post(geminiUrl, geminiPrompt);
-        console.log("[AI SOURCE] Active Provider: Google Gemini 1.5 Flash");
-        return geminiResponse.data.candidates[0].content.parts[0].text.trim();
+        console.log("Success: Content generated via Groq Primary Node.");
+        return groqResponse.data.choices[0].message.content.trim();
 
-    } catch (error) {
-        console.warn("[AI SOURCE] Fallback Mode Active (Hugging Face)");
-        return `${techLog} ⚙️ #Aura_${uniqueSalt}`; // Added unique tag to bypass duplicate filters
+    } catch (primaryError) {
+        console.warn("Primary Provider Failed. Transitioning to Fallback Node...");
+
+        // Attempt 2: Hugging Face Inference API (Fallback redundancy)
+        try {
+            const hfResponse = await axios.post(
+                'https://api-inference.huggingface.co/models/mistralai/Mistral-7B-v0.1', { inputs: `<s>[INST] ${prompt} [/INST]` }, {
+                    headers: {
+                        'Authorization': `Bearer ${process.env.HF_TOKEN}`,
+                        'Content-Type': 'application/json'
+                    }
+                }
+            );
+
+            console.log("Success: Content generated via Hugging Face Fallback Node.");
+            return hfResponse.data[0].generated_text || hfResponse.data[0].summary_text;
+
+        } catch (fallbackError) {
+            console.error("Critical Failure: All AI providers are currently unreachable.");
+            return "Engineering excellence requires both robust automation and strategic manual oversight.";
+        }
     }
 }
 
-async function postToLinkedIn(content) {
-    const url = 'https://api.linkedin.com/v2/ugcPosts';
-    const body = {
-        author: `urn:li:person:${process.env.LINKEDIN_PERSON_ID}`,
-        lifecycleState: 'PUBLISHED',
-        specificContent: {
-            'com.linkedin.ugc.ShareContent': {
-                shareCommentary: { text: content },
-                shareMediaCategory: 'NONE'
-            }
-        },
-        visibility: { 'com.linkedin.ugc.MemberNetworkVisibility': 'PUBLIC' }
-    };
-
-    return axios.post(url, body, {
-        headers: {
-            'Authorization': `Bearer ${process.env.LINKEDIN_ACCESS_TOKEN}`,
-            'X-Restli-Protocol-Version': '2.0.0',
-            'Content-Type': 'application/json'
-        }
-    });
-}
-
-async function runAuraAutonomous() {
-    console.log(`--- [SYSTEM] ${AGENT_NAME} Optimized Cycle ---`);
+/**
+ * Main execution function to handle content generation and filesystem logging.
+ */
+async function executeAgentCycle() {
+    console.log("Initiating Autonomous Cycle...");
 
     try {
-        const humanInsight = await generateAuraInsights();
-        console.log(`[CONTENT] Generated: ${humanInsight}`);
+        const insight = await getTechnicalInsight();
+        const timestamp = new Date().toISOString();
 
-        const timestamp = new Date().toLocaleString("en-US", { timeZone: "Asia/Dhaka" });
-        fs.appendFileSync('progress_log.txt', `\n[${timestamp}] ${humanInsight}`);
+        // Structure log entry in Markdown format for repository visibility
+        const logEntry = `\n---\n### Generation Timestamp: ${timestamp}\n\n> ${insight}\n`;
 
-        /* Concurrent Dispatch with enhanced logging */
-        await Promise.all([
-            postToLinkedIn(humanInsight).then(() => console.log("[SUCCESS] LinkedIn post live.")).catch(e => console.error("[LinkedIn Error]", e.response?.data?.message || e.message)),
-            X_CLIENT.v2.tweet(humanInsight).then(() => console.log("[SUCCESS] X tweet live.")).catch(e => console.error("[X Error]", e.message))
-        ]);
+        // Synchronous append to ensure file integrity during process
+        fs.appendFileSync('posts_log.md', logEntry);
+        console.log("Process Complete: Log entry recorded in posts_log.md");
 
-        const TOKEN = process.env.MY_GITHUB_TOKEN?.trim();
-        const remoteUrl = `https://x-access-token:${TOKEN}@github.com/Priom-Das/Project---Aura.git`;
-        await git.addConfig('user.name', 'github-actions[bot]');
-        await git.addConfig('user.email', 'github-actions[bot]@users.noreply.github.com');
-        const remotes = await git.getRemotes();
-        if (remotes.find(r => r.name === 'origin')) await git.removeRemote('origin');
-        await git.addRemote('origin', remoteUrl);
-        await git.add('progress_log.txt');
-        await git.commit(`Automated Sync: ${AGENT_NAME}`);
-        await git.push('origin', 'main');
-
-    } catch (error) {
-        console.error("[CRITICAL]", error.message);
+    } catch (err) {
+        console.error("Process Aborted: " + err.message);
         process.exit(1);
     }
 }
 
-runAuraAutonomous();
+// Entry Point
+executeAgentCycle();
