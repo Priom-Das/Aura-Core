@@ -32,8 +32,9 @@ async function generateAuraInsights() {
     });
     const techLog = hfResponse.choices[0].message.content.trim();
 
-    /* Keep this block: It communicates with Gemini AI */
-    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`;
+
+    /* Standardized Gemini Pro Endpoint - Most Compatible */
+    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${process.env.GEMINI_API_KEY}`;
 
     const geminiPrompt = {
         contents: [{
