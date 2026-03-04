@@ -34,7 +34,8 @@ async function generateAuraInsights() {
 
 
     /* Standardized Gemini Pro Endpoint - Most Compatible */
-    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${process.env.GEMINI_API_KEY}`;
+    /* Corrected Stable Gemini Endpoint */
+    const geminiUrl = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`;
 
     const geminiPrompt = {
         contents: [{
