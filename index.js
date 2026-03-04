@@ -1,6 +1,6 @@
 /*
  * Project Aura - Autonomous AI Agent
- * Version: 1.3.7 (Integrated Dual-AI with Source Tracking)
+ * Version: 1.4.0 (Free Tier Stability & Anti-Duplicate Mode)
  */
 
 require('dotenv').config();
@@ -22,42 +22,45 @@ const X_CLIENT = new TwitterApi({
 });
 
 /**
- * Generates content and identifies which AI provider was used.
- * Logs the source to GitHub Actions console for traceability.
+ * Generates a random topic to ensure content uniqueness
  */
+function getRandomTopic() {
+    const topics = [
+        "Cloud Computing in 2026",
+        "Edge AI benefits",
+        "Sustainable Tech",
+        "The future of JavaScript",
+        "Cybersecurity in Automation"
+    ];
+    return topics[Math.floor(Math.random() * topics.length)];
+}
+
 async function generateAuraInsights() {
-    /* Step 1: Generate technical base using Hugging Face (Llama 3.2) */
+    const topic = getRandomTopic();
+    const uniqueSalt = Date.now(); // Adds uniqueness to prevent 422 errors
+
+    /* Step 1: Hugging Face Base Generation */
     const hfResponse = await hf.chatCompletion({
         model: "meta-llama/Llama-3.2-1B-Instruct",
-        messages: [{ role: "user", content: "Write a professional one-sentence technical log about AI automation. Under 12 words." }],
-        max_tokens: 30,
-        temperature: 0.7
+        messages: [{ role: "user", content: `Write a 10-word technical insight about ${topic}.` }],
+        max_tokens: 30
     });
     const techLog = hfResponse.choices[0].message.content.trim();
 
-    /* Step 2: Attempt refinement via Gemini 1.5 Flash */
+    /* Step 2: Gemini Refinement */
     try {
         const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`;
-
         const geminiPrompt = {
-            contents: [{
-                parts: [{
-                    text: `You are ${AGENT_NAME}. Rewrite this technical log: "${techLog}" into an engaging LinkedIn and X post. Use one emoji.`
-                }]
-            }]
+            contents: [{ parts: [{ text: `Topic: ${topic}. Log: ${techLog}. Rewrite as a professional post with one emoji. Ensure it sounds different from previous posts. Reference ID: ${uniqueSalt}` }] }]
         };
 
         const geminiResponse = await axios.post(geminiUrl, geminiPrompt);
-        const finalContent = geminiResponse.data.candidates[0].content.parts[0].text.trim();
-
-        /* Successful identification log */
         console.log("[AI SOURCE] Active Provider: Google Gemini 1.5 Flash");
-        return finalContent;
+        return geminiResponse.data.candidates[0].content.parts[0].text.trim();
 
     } catch (error) {
-        /* Fallback mechanism if Gemini returns 404 or fails */
-        console.warn("[AI SOURCE] Active Provider: Hugging Face (Fallback Mode)");
-        return `${techLog} ⚙️ #ProjectAura`;
+        console.warn("[AI SOURCE] Fallback Mode Active (Hugging Face)");
+        return `${techLog} ⚙️ #Aura_${uniqueSalt}`; // Added unique tag to bypass duplicate filters
     }
 }
 
@@ -84,48 +87,35 @@ async function postToLinkedIn(content) {
     });
 }
 
-/**
- * Primary execution engine
- */
 async function runAuraAutonomous() {
-    console.log(`--- [SYSTEM] ${AGENT_NAME} Force Cycle Initiated ---`);
+    console.log(`--- [SYSTEM] ${AGENT_NAME} Optimized Cycle ---`);
 
     try {
-        /* Content Synthesis */
         const humanInsight = await generateAuraInsights();
-        console.log(`[CONTENT] Final Payload: ${humanInsight}`);
+        console.log(`[CONTENT] Generated: ${humanInsight}`);
 
-        /* Local File Persistence */
         const timestamp = new Date().toLocaleString("en-US", { timeZone: "Asia/Dhaka" });
-        const logEntry = `\n[${timestamp}] ${AGENT_NAME}: ${humanInsight}`;
-        fs.appendFileSync('progress_log.txt', logEntry);
-        console.log("[FILE] Local logs updated.");
+        fs.appendFileSync('progress_log.txt', `\n[${timestamp}] ${humanInsight}`);
 
-        /* Social Media Distribution */
-        console.log("[SOCIAL] Distributing content to LinkedIn and X...");
+        /* Concurrent Dispatch with enhanced logging */
         await Promise.all([
-            postToLinkedIn(humanInsight).catch(e => console.error("[LinkedIn Error]", e.message)),
-            X_CLIENT.v2.tweet(humanInsight).catch(e => console.error("[X Error]", e.message))
+            postToLinkedIn(humanInsight).then(() => console.log("[SUCCESS] LinkedIn post live.")).catch(e => console.error("[LinkedIn Error]", e.response?.data?.message || e.message)),
+            X_CLIENT.v2.tweet(humanInsight).then(() => console.log("[SUCCESS] X tweet live.")).catch(e => console.error("[X Error]", e.message))
         ]);
 
-        /* GitHub Version Control Synchronization */
         const TOKEN = process.env.MY_GITHUB_TOKEN?.trim();
         const remoteUrl = `https://x-access-token:${TOKEN}@github.com/Priom-Das/Project---Aura.git`;
-
         await git.addConfig('user.name', 'github-actions[bot]');
         await git.addConfig('user.email', 'github-actions[bot]@users.noreply.github.com');
-
         const remotes = await git.getRemotes();
         if (remotes.find(r => r.name === 'origin')) await git.removeRemote('origin');
         await git.addRemote('origin', remoteUrl);
-
         await git.add('progress_log.txt');
-        await git.commit(`Automated Sync: ${AGENT_NAME} Update`);
+        await git.commit(`Automated Sync: ${AGENT_NAME}`);
         await git.push('origin', 'main');
-        console.log("[GIT] Remote repository synchronized successfully.");
 
     } catch (error) {
-        console.error("[CRITICAL FAILURE]", error.message);
+        console.error("[CRITICAL]", error.message);
         process.exit(1);
     }
 }
