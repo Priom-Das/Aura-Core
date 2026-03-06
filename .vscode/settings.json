@@ -2,6 +2,7 @@
     "cSpell.words": [
         "axios",
         "dotenv",
+        "GORQ",
         "Groq",
         "HUGGINGFACE",
         "mistralai",

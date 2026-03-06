@@ -1,55 +1,57 @@
-# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
-# @file aura-automation.yml
-# @description GitHub Actions workflow for autonomous AI content generation.
+# @format
+# Professional CI/CD Pipeline for Aura Autonomous Agent
+# Status: Production Ready | Provider: Groq & HuggingFace
 
-name: Aura Automation Pipeline
+name: Aura-Automation-Pipeline
 
 on:
   schedule:
-    - cron: '0 0 * * *' # Executes daily at 00:00 UTC
-  workflow_dispatch: # Enables manual execution for testing
+    - cron: '0 0 * * *' # Automated execution at 00:00 UTC
+  workflow_dispatch:      # Manual trigger enabled
 
 jobs:
-  run-pipeline:
+  run-logic:
     runs-on: ubuntu-latest
-    
-    # Ensures only one workflow runs at a time to prevent git conflicts
-    concurrency:
-      group: aura-sync
-      cancel-in-progress: true
+    permissions:
+      contents: write   # Permission to push logs back to repository
 
     steps:
-      - name: Checkout Source Code
+      - name: Fetch-Source-Code
         uses: actions/checkout@v4
         with:
-          token: ${{secrets.MY_GITHUB_TOKEN}}
+          # Personal Access Token for secure repository write access
+          token: ${{ secrets.MY_GITHUB_TOKEN }}
 
-      - name: Initialize Node.js Environment
+      - name: Setup-Node-Environment
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
+          # Note: No 'cache' option here to avoid 'lock file not found' error
 
-      - name: Install Project Dependencies
-        run: npm install
+      - name: Install-Packages
+        # Using '--no-package-lock' to prevent installation errors if the lock file is missing
+        run: npm install --no-package-lock
 
-      - name: Execute AI Generation
+      - name: Run-AI-Engine
         env:
+          # Securely injecting AI engine credentials
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: node index.js
 
-      - name: Synchronize Logs to Repository
+      - name: Commit-Changes
         run: |
-          # Configure Git identity for the automated bot
+          # Configuring Git bot for automated commits
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           
+          # Maintain operational audit log
+          touch posts_log.md
           git add posts_log.md
           
-          # Perform commit and push only if modifications are detected
+          # Only push if new content has been generated
           if git diff --staged --quiet; then
-            echo "No changes detected in logs."
+            echo "Status: No changes found."
           else
             git commit -m "System: Update autonomous logs [skip ci]"
             git push origin main
