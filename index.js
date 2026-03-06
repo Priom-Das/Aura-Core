@@ -1,8 +1,8 @@
 /**
  * @file index.js
- * @description Autonomous AI agent that generates technical insights using a failover architecture.
+ * @description Autonomous AI agent with multi-provider failover logic.
  * @author Priom Das
- * @version 2.0.0
+ * @version 2.1.0
  */
 
 require('dotenv').config();
@@ -10,14 +10,13 @@ const fs = require('fs');
 const axios = require('axios');
 
 /**
- * Orchestrates content generation by attempting multiple AI providers.
- * Primary: Groq (Llama-3), Fallback: Hugging Face (Mistral).
- * @returns {Promise<string>} Generated technical insight.
+ * Generates technical insights by switching between Groq (Primary) and Hugging Face (Fallback).
+ * @returns {Promise<string>} The generated AI content.
  */
 async function getTechnicalInsight() {
-    const prompt = "Provide a concise, professional technical insight for modern software engineers in 2026.";
+    const prompt = "Provide a concise, professional technical insight for software engineers in 2026. Focus on AI integration or system design.";
 
-    // Attempt 1: Groq Cloud API (High-performance inference)
+    // --- Primary Provider: Groq Cloud (Llama-3-8b) ---
     try {
         const groqResponse = await axios.post(
             'https://api.groq.com/openai/v1/chat/completions', {
@@ -32,13 +31,13 @@ async function getTechnicalInsight() {
             }
         );
 
-        console.log("Success: Content generated via Groq Primary Node.");
+        console.log("[Status] Primary Node (Groq) successfully generated content.");
         return groqResponse.data.choices[0].message.content.trim();
 
     } catch (primaryError) {
-        console.warn("Primary Provider Failed. Transitioning to Fallback Node...");
+        console.warn("[Warning] Primary Node failed. Switching to Fallback Node (Hugging Face)...");
 
-        // Attempt 2: Hugging Face Inference API (Fallback redundancy)
+        // --- Fallback Provider: Hugging Face (Mistral-7B) ---
         try {
             const hfResponse = await axios.post(
                 'https://api-inference.huggingface.co/models/mistralai/Mistral-7B-v0.1', { inputs: `<s>[INST] ${prompt} [/INST]` }, {
@@ -49,38 +48,41 @@ async function getTechnicalInsight() {
                 }
             );
 
-            console.log("Success: Content generated via Hugging Face Fallback Node.");
-            return hfResponse.data[0].generated_text || hfResponse.data[0].summary_text;
+            console.log("[Status] Fallback Node (Hugging Face) successfully generated content.");
+
+            // Clean Mistral output to remove the input prompt from the response
+            let rawText = hfResponse.data[0].generated_text || hfResponse.data[0].summary_text;
+            return rawText.split('[/INST]').pop().trim();
 
         } catch (fallbackError) {
-            console.error("Critical Failure: All AI providers are currently unreachable.");
-            return "Engineering excellence requires both robust automation and strategic manual oversight.";
+            console.error("[Critical] All AI nodes are unreachable.");
+            return "Resilience in automation is built through redundant systems and continuous monitoring.";
         }
     }
 }
 
 /**
- * Main execution function to handle content generation and filesystem logging.
+ * Main execution cycle for the AI Agent.
  */
 async function executeAgentCycle() {
-    console.log("Initiating Autonomous Cycle...");
+    console.log("[System] Initiating Autonomous Content Generation...");
 
     try {
         const insight = await getTechnicalInsight();
-        const timestamp = new Date().toISOString();
+        const timestamp = new Date().toLocaleString('en-US', { timeZone: 'UTC' });
 
-        // Structure log entry in Markdown format for repository visibility
-        const logEntry = `\n---\n### Generation Timestamp: ${timestamp}\n\n> ${insight}\n`;
+        // Formatting the log entry in professional Markdown
+        const logEntry = `\n---\n### Runtime: ${timestamp} (UTC)\n\n> ${insight}\n`;
 
-        // Synchronous append to ensure file integrity during process
+        // Synchronous file append to maintain data integrity
         fs.appendFileSync('posts_log.md', logEntry);
-        console.log("Process Complete: Log entry recorded in posts_log.md");
+        console.log("[Success] Content synchronized to posts_log.md");
 
     } catch (err) {
-        console.error("Process Aborted: " + err.message);
+        console.error("[Error] Cycle Aborted: " + err.message);
         process.exit(1);
     }
 }
 
-// Entry Point
+// Global process entry point
 executeAgentCycle();
