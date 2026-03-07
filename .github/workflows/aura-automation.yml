@@ -1,60 +1,44 @@
-# @file main.yml
-# @description Autonomous CI/CD pipeline for Project Aura.
-# Handles scheduled AI generation and automated log synchronization.
-# @version 2.5.0
-
-name: Aura Autonomous Cycle
+name: Aura-Autonomous-Cycle
 
 on:
   push:
     branches:
       - main
   schedule:
-    # Runs automatically every day at 00:00 UTC
     - cron: '0 0 * * *'
   workflow_dispatch:
-    # Allows manual triggering from the GitHub Actions tab
 
 jobs:
-  build_and_run:
+  execution:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Repository
+      - name: Checkout
         uses: actions/checkout@v4
         with:
-          # Necessary to allow the action to push changes back
           fetch-depth: 0
 
-      - name: Setup Node.js Environment
+      - name: Setup-Node
         uses: actions/setup-node@v4
         with:
           node-version: '20'
-          cache: 'npm'
 
-      - name: Install Dependencies
+      - name: Install
         run: npm install
 
-      - name: Execute Autonomous Agent Cycle
-        # Injecting secrets from GitHub Settings into Environment Variables
+      - name: Execute
         env:
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
-          MY_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: node index.js
 
-      - name: Synchronize Architectural Logs
+      - name: Sync-Logs
         run: |
-          # Professional Git Identity Configuration
           git config --local user.email "action@github.com"
           git config --local user.name "Aura-Automator"
-          
-          # Checking if there are any changes to commit
-          if [[ -n "$(git status --porcelain)" ]]; then
+          if [[ -n "$(git status --porcelain posts_log.md)" ]]; then
             git add posts_log.md
-            # Using [skip ci] to prevent recursive workflow triggers
-            git commit -m "Build: Autonomous synchronization of architectural logs [skip ci]"
+            git commit -m "Build: Autonomous log sync - $(date +'%Y-%m-%d %H:%M:%S')"
             git push origin main
-          else
-            echo "No changes detected. Skipping commit."
           fi
