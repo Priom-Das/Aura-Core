@@ -1,3 +1,7 @@
+# @file aura-automation.yml
+# @description Autonomous synchronization pipeline for Project Aura.
+# @version 2.5.3
+
 name: Aura-Autonomous-Cycle
 
 on:
@@ -5,40 +9,50 @@ on:
     branches:
       - main
   schedule:
+    # Executes automatically at 00:00 UTC every day
     - cron: '0 0 * * *'
   workflow_dispatch:
+    # Enables manual execution from the GitHub Actions interface
+
+permissions:
+  contents: write
 
 jobs:
   execution:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
+      - name: Checkout-Repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Setup-Node
+      - name: Environment-Setup
         uses: actions/setup-node@v4
         with:
           node-version: '20'
 
-      - name: Install
+      - name: Dependency-Installation
         run: npm install
 
-      - name: Execute
+      - name: Execute-Agent-Logic
         env:
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: node index.js
 
-      - name: Sync-Logs
+      - name: Commit-and-Push-Logs
         run: |
           git config --local user.email "action@github.com"
           git config --local user.name "Aura-Automator"
+          
+          # Check for local modifications in posts_log.md
           if [[ -n "$(git status --porcelain posts_log.md)" ]]; then
             git add posts_log.md
-            git commit -m "Build: Autonomous log sync - $(date +'%Y-%m-%d %H:%M:%S')"
+            # Critical: [skip ci] prevents recursive workflow triggers
+            git commit -m "Build: Autonomous log synchronization - $(date +'%Y-%m-%d %H:%M:%S') [skip ci]"
             git push origin main
+          else
+            echo "No changes detected. Workflow finalized."
           fi
