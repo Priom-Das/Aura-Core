@@ -1,55 +1,60 @@
-# @format
-# Professional GitHub Actions Workflow for Project Aura
-# Status: Real-time trigger on push enabled for debugging and automation.
+# @file main.yml
+# @description Autonomous CI/CD pipeline for Project Aura.
+# Handles scheduled AI generation and automated log synchronization.
+# @version 2.5.0
 
-name: Aura-Automation-Pipeline
+name: Aura Autonomous Cycle
 
 on:
   push:
-    branches: [ main ]  # This ensures the workflow runs immediately after every push.
+    branches:
+      - main
   schedule:
-    - cron: '0 0 * * *' # Automated daily execution at Midnight UTC.
-  workflow_dispatch:      # Allows manual trigger via the Actions tab.
+    # Runs automatically every day at 00:00 UTC
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+    # Allows manual triggering from the GitHub Actions tab
 
 jobs:
-  automation-job:
+  build_and_run:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write   # Necessary for the bot to push log updates.
 
     steps:
-      - name: Checkout-Source-Code
+      - name: Checkout Repository
         uses: actions/checkout@v4
         with:
-          token: ${{ secrets.MY_GITHUB_TOKEN }} # Uses your PAT for authentication.
+          # Necessary to allow the action to push changes back
+          fetch-depth: 0
 
-      - name: Setup-Node-Runtime
+      - name: Setup Node.js Environment
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+          cache: 'npm'
 
-      - name: Install-Dependencies
-        run: npm install --no-package-lock # Prevents errors if lock-file is missing.
+      - name: Install Dependencies
+        run: npm install
 
-      - name: Run-AI-Agent-Cycle
+      - name: Execute Autonomous Agent Cycle
+        # Injecting secrets from GitHub Settings into Environment Variables
         env:
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
-        run: node index.js # Executes your AI logic.
+          MY_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: node index.js
 
-      - name: Git-Synchronize
+      - name: Synchronize Architectural Logs
         run: |
-          # Configuring automated bot identity.
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          # Professional Git Identity Configuration
+          git config --local user.email "action@github.com"
+          git config --local user.name "Aura-Automator"
           
-          touch posts_log.md
-          git add posts_log.md
-          
-          # Only commit if new content was actually generated.
-          if git diff --staged --quiet; then
-            echo "Status: No changes detected in the logs."
-          else
-            git commit -m "System: Autonomous log update [skip ci]"
+          # Checking if there are any changes to commit
+          if [[ -n "$(git status --porcelain)" ]]; then
+            git add posts_log.md
+            # Using [skip ci] to prevent recursive workflow triggers
+            git commit -m "Build: Autonomous synchronization of architectural logs [skip ci]"
             git push origin main
+          else
+            echo "No changes detected. Skipping commit."
           fi
