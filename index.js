@@ -1,8 +1,10 @@
 /**
  * @file index.js
- * @description Advanced Autonomous Agent with high-level architectural prompting.
+ * @description Advanced Autonomous Agent for Project Aura.
+ * Handles AI content generation with multi-layered fallback mechanisms.
+ * Updated to support 2026 API endpoints and versatile models.
  * @author Priom Das
- * @version 2.3.1
+ * @version 2.4.2
  */
 
 require('dotenv').config();
@@ -10,22 +12,22 @@ const fs = require('fs');
 const axios = require('axios');
 
 /**
- * Generates high-quality technical insights using specialized persona prompting.
- * @returns {Promise<object>} Content and the provider used.
+ * Fetches technical insights from AI providers with error diagnostics.
+ * @returns {Promise<object>} Returns an object containing content and provider metadata.
  */
 async function getTechnicalInsight() {
-    // Optimized Prompt for 2026 Trends
+    // Professional architectural prompt focused on 2026 technical trends
     const optimizedPrompt = `Act as a world-class Software Architect in 2026. 
-    Provide one deep technical insight or a 'Pro-Tip' regarding microservices, 
-    AI-native infrastructure, or cybersecurity. 
-    Constraint: Keep it professional, highly technical, and under 60 words. 
-    Avoid generic advice.`;
+    Provide one deep technical insight regarding microservices or AI-native infrastructure. 
+    Keep it under 60 words. Avoid generic advice.`;
 
-    // Attempt 1: Groq Cloud (Llama-3-8b)
+    /** * Primary Execution: Groq Cloud 
+     * Model: llama-3.3-70b-versatile
+     */
     try {
         const groqResponse = await axios.post(
             'https://api.groq.com/openai/v1/chat/completions', {
-                model: "llama3-8b-8192",
+                model: "llama-3.3-70b-versatile",
                 messages: [{ role: "user", content: optimizedPrompt }],
                 temperature: 0.6
             }, {
@@ -33,22 +35,32 @@ async function getTechnicalInsight() {
                     'Authorization': `Bearer ${process.env.GROQ_API_KEY}`,
                     'Content-Type': 'application/json'
                 },
-                timeout: 10000 // 10-second timeout
+                timeout: 12000
             }
         );
 
         return {
             content: groqResponse.data.choices[0].message.content.trim(),
-            provider: "Groq (Llama-3)"
+            provider: "Groq (Llama-3.3-Versatile)"
         };
 
     } catch (primaryError) {
-        console.warn("[System] Primary Node (Groq) is throttled or unreachable. Switching to Fallback...");
+        // Logging technical diagnostics for system auditing
+        console.error("--- Diagnostic: Primary API Node Failure ---");
+        if (primaryError.response) {
+            console.error(`HTTP Status: ${primaryError.response.status}`);
+            console.error(`Response Data: ${JSON.stringify(primaryError.response.data)}`);
+        } else {
+            console.error(`Network/Timeout Error: ${primaryError.message}`);
+        }
 
-        // Attempt 2: Hugging Face (Mistral-7B)
+        /** * Secondary Execution: Hugging Face Fallback
+         */
         try {
             const hfResponse = await axios.post(
-                'https://api-inference.huggingface.co/models/mistralai/Mistral-7B-v0.1', { inputs: `<s>[INST] ${optimizedPrompt} [/INST]` }, {
+                'https://router.huggingface.co/hf-inference/models/mistralai/Mistral-7B-v0.1', {
+                    inputs: `<s>[INST] ${optimizedPrompt} [/INST]`
+                }, {
                     headers: {
                         'Authorization': `Bearer ${process.env.HF_TOKEN}`,
                         'Content-Type': 'application/json'
@@ -57,52 +69,54 @@ async function getTechnicalInsight() {
                 }
             );
 
-            let rawText = hfResponse.data[0].generated_text || hfResponse.data[0].summary_text || "";
-            // Removing prompt from response to ensure clean log
-            let cleanText = rawText.includes('[/INST]') ? rawText.split('[/INST]').pop().trim() : rawText.trim();
+            const rawText = hfResponse.data[0].generated_text || "";
+            const cleanText = rawText.includes('[/INST]') ? rawText.split('[/INST]').pop().trim() : rawText.trim();
 
             return {
                 content: cleanText,
-                provider: "Hugging Face (Mistral-7B)"
+                provider: "Hugging Face (Mistral-7B-Router)"
             };
 
         } catch (fallbackError) {
-            // Hardcoded fallback if all APIs fail
+            console.error("--- Diagnostic: Secondary API Node Failure ---");
+
+            // Final static fallback to maintain system availability
             return {
-                content: "System Resilience Tip: Implement circuit breakers at the API gateway level to prevent cascading failures in distributed environments.",
-                provider: "System Default (Hardcoded Insight)"
+                content: "Architectural Insight: Implement distributed tracing and circuit breakers to ensure observability in complex microservices environments.",
+                provider: "System-Level Static Fallback"
             };
         }
     }
 }
 
-/*
- Main execution and logging cycle.
+/**
+ * Main execution cycle that manages logging and file synchronization.
+ * Standardized Markdown formatting without any special characters or icons.
  */
 async function executeAgentCycle() {
-    console.log("[System] Initializing Agent Cycle...");
+    console.log("System Status: Initializing AI Generation Cycle...");
     try {
         const result = await getTechnicalInsight();
         const timestamp = new Date().toLocaleString('en-US', { timeZone: 'UTC' });
 
-        // Stylish Markdown formatting with clear Provider identification
+        // Clean Markdown formatting for logs - No emojis or icons used
         const logEntry = `
 ---
-### ⚡ Aura Intelligence Report | ${timestamp} (UTC)
-**Model Engine:** \`${result.provider}\`
+### Aura Intelligence Report | ${timestamp} (UTC)
+**Model Engine:** ${result.provider}
 
 > ${result.content}
 `;
 
-        // Using synchronous append to prevent race conditions during file I/O
+        // Synchronous file operation to ensure data integrity
         fs.appendFileSync('posts_log.md', logEntry);
-        console.log(`[Success] Logic executed via ${result.provider}`);
+        console.log(`System Status: Cycle completed successfully via ${result.provider}`);
 
     } catch (err) {
-        console.error("[Fatal Error] Automation halted: " + err.message);
+        console.error("Critical Failure: Process terminated unexpectedly: " + err.message);
         process.exit(1);
     }
 }
 
-// Entry point
+// Global invocation
 executeAgentCycle();
