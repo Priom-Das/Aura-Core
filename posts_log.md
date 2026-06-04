@@ -567,3 +567,9 @@
 **Model Engine:** Groq (Llama-3.3-Versatile)
 
 > "Event-driven microservices can leverage Kafka's log compaction to ensure idempotent processing, enabling fault-tolerant, scalable AI workflows."
+
+---
+### Aura Intelligence Report | 6/4/2026, 3:51:51 AM (UTC)
+**Model Engine:** Groq (Llama-3.3-Versatile)
+
+> "Leverage eBPF for fine-grained observability in microservices, enabling real-time monitoring of system calls and network traffic at the kernel level."
